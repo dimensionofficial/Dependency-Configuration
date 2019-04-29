@@ -66,59 +66,7 @@ struct signature_shim : public crypto::shim<signature_data> {
    }
 };
 
-#if 0
-struct signature_thing {
-   using data_type = signature_thing;
-
-   public_key_shim recover(const sha256& digest, bool check_canonical) const {
-      return public_key_shim();
-   }
-
-   const std::vector<uint8_t> serialize() const {
-         return std::vector<uint8_t>(5);;
-   }
-
-       template<typename T>
-    inline friend T& operator<<( T& ds, const signature_thing& ep ) {
-      //ds.write( ep.data(), sizeof(ep) );
-      return ds;
-    }
-
-    template<typename T>
-    inline friend T& operator>>( T& ds, signature_thing& ep ) {
-      //ds.read( ep.data(), sizeof(ep) );
-      return ds;
-    }
-};
-#endif
-
 }}
-
-#if 0
-namespace raw {
-template<typename Stream>
-void unpack( Stream& s, crypto::webauthn::public_key& pk) {
-   crypto::webauthn::public_key_data ser;
-   fc::raw::unpack(s,ser);
-   pk = fc::crypto::webauthn::public_key( ser );
-}
-
-template<typename Stream>
-void pack( Stream& s, const crypto::webauthn::public_key& pk) {
-   fc::raw::pack(s, pk.serialize());
-}
-
-template<typename Stream>
-void unpack( Stream& s, crypto::webauthn::signature_thing& pk) {
-
-}
-
-template<typename Stream>
-void pack( Stream& s, const crypto::webauthn::signature_thing& pk) {
-
-}
-}
-#endif
 
 }
 #include <fc/reflect/reflect.hpp>

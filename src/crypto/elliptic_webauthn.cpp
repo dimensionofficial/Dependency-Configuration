@@ -210,8 +210,13 @@ public_key::public_key(const signature_data& c, const fc::sha256& digest, bool c
 
    std::string challenge_bytes = fc::base64url_decode(handler.found_challenge);
    FC_ASSERT(fc::sha256(challenge_bytes.data(), challenge_bytes.size()) == digest, "Wrong webauthn challenge");
-   //XXX check origin here
-   //XXX do we need to check rpid hash in auth_data?
+
+   char required_origin_scheme[] = "https://";
+   size_t https_len = strlen(required_origin_scheme);
+   wlog("mm ${o}", ("o", handler.found_origin));
+   FC_ASSERT(handler.found_origin.compare(0, https_len, required_origin_scheme) == 0, "webauthn origin must begin with https://");
+   std::string rpid = handler.found_origin.substr(https_len, handler.found_origin.rfind(':')-https_len);
+   printf("%02X\n", auth_data[32]);
 
    //the signature (and thus public key we need to return) will be over
    // sha256(auth_data || client_data_hash)
