@@ -6,23 +6,165 @@
 #include <fc/fwd_impl.hpp>
 #include <fc/exception/exception.hpp>
 #include <fc/log/logger.hpp>
-#include <fc/io/json.hpp>
+
+#include "rapidjson/reader.h"
+#include <string>
 
 namespace fc { namespace crypto { namespace webauthn {
 
 namespace detail {
+using namespace std::literals;
+
 class public_key_impl {
    public:
       public_key_data data;
 };
 
-struct client_data_json_object {
-   std::string type;
-   std::string challenge;
+struct webauthn_json_handler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, webauthn_json_handler> {
+   std::string found_challenge;
+   std::string found_origin;
+
+   enum parse_stat_t {
+      EXPECT_FIRST_OBJECT_START,
+      EXPECT_FIRST_OBJECT_KEY,
+      EXPECT_FIRST_OBJECT_DONTCARE_VALUE,
+      EXPECT_CHALLENGE_VALUE,
+      EXPECT_ORIGIN_VALUE,
+      IN_NESTED_CONTAINER
+   } current_state = EXPECT_FIRST_OBJECT_START;
+   unsigned current_nested_container_depth = 0;
+
+   bool Null() {
+      return (current_state == IN_NESTED_CONTAINER || current_state == EXPECT_FIRST_OBJECT_DONTCARE_VALUE);
+   }
+   bool Bool(bool) {
+      return (current_state == IN_NESTED_CONTAINER || current_state == EXPECT_FIRST_OBJECT_DONTCARE_VALUE);
+   }
+   bool Int(int) {
+      return (current_state == IN_NESTED_CONTAINER || current_state == EXPECT_FIRST_OBJECT_DONTCARE_VALUE);
+   }
+   bool Uint(unsigned) {
+      return (current_state == IN_NESTED_CONTAINER || current_state == EXPECT_FIRST_OBJECT_DONTCARE_VALUE);
+   }
+   bool Int64(int64_t) {
+      return (current_state == IN_NESTED_CONTAINER || current_state == EXPECT_FIRST_OBJECT_DONTCARE_VALUE);
+   }
+   bool Uint64(uint64_t) {
+      return (current_state == IN_NESTED_CONTAINER || current_state == EXPECT_FIRST_OBJECT_DONTCARE_VALUE);
+   }
+   bool Double(double) {
+      return (current_state == IN_NESTED_CONTAINER || current_state == EXPECT_FIRST_OBJECT_DONTCARE_VALUE);
+   }
+
+   bool String(const char* str, rapidjson::SizeType length, bool copy) {
+      switch(current_state) {
+         case EXPECT_FIRST_OBJECT_START:
+         case EXPECT_FIRST_OBJECT_KEY:
+            return false;
+         case EXPECT_CHALLENGE_VALUE:
+            found_challenge = std::string(str, length);
+            current_state = EXPECT_FIRST_OBJECT_KEY;
+            return true;
+         case EXPECT_ORIGIN_VALUE:
+            found_origin = std::string(str, length);
+            current_state = EXPECT_FIRST_OBJECT_KEY;
+            return true;
+         case EXPECT_FIRST_OBJECT_DONTCARE_VALUE:
+            current_state = EXPECT_FIRST_OBJECT_KEY;
+            return true;
+         case IN_NESTED_CONTAINER:
+            return true;
+      }
+   }
+
+   bool StartObject() {
+      switch(current_state) {
+         case EXPECT_FIRST_OBJECT_START:
+            current_state = EXPECT_FIRST_OBJECT_KEY;
+            return true;
+         case EXPECT_FIRST_OBJECT_DONTCARE_VALUE:
+            current_state = IN_NESTED_CONTAINER;
+            ++current_nested_container_depth;
+            return true;
+         case IN_NESTED_CONTAINER:
+            ++current_nested_container_depth;
+            return true;
+         case EXPECT_FIRST_OBJECT_KEY:
+         case EXPECT_CHALLENGE_VALUE:
+         case EXPECT_ORIGIN_VALUE:
+            return false;
+      }
+   }
+   bool Key(const char* str, rapidjson::SizeType length, bool copy) {
+      switch(current_state) {
+         case EXPECT_FIRST_OBJECT_START:
+         case EXPECT_FIRST_OBJECT_DONTCARE_VALUE:
+         case EXPECT_CHALLENGE_VALUE:
+         case EXPECT_ORIGIN_VALUE:
+            return false;
+         case EXPECT_FIRST_OBJECT_KEY: {
+            if("challenge"s == str)
+               current_state = EXPECT_CHALLENGE_VALUE;
+            else if("origin"s == str)
+               current_state = EXPECT_ORIGIN_VALUE;
+            else
+               current_state = EXPECT_FIRST_OBJECT_DONTCARE_VALUE;
+            return true;
+         }
+         case IN_NESTED_CONTAINER:
+            return true;
+      }
+   }
+   bool EndObject(rapidjson::SizeType memberCount) {
+      switch(current_state) {
+         case EXPECT_FIRST_OBJECT_START:
+         case EXPECT_FIRST_OBJECT_DONTCARE_VALUE:
+         case EXPECT_CHALLENGE_VALUE:
+         case EXPECT_ORIGIN_VALUE:
+            return false;
+         case IN_NESTED_CONTAINER:
+            if(!--current_nested_container_depth)
+               current_state = EXPECT_FIRST_OBJECT_KEY;
+            return true;
+         case EXPECT_FIRST_OBJECT_KEY:
+            return true;
+      }
+   }
+
+   bool StartArray() {
+      switch(current_state) {
+         case EXPECT_FIRST_OBJECT_DONTCARE_VALUE:
+            current_state = IN_NESTED_CONTAINER;
+            ++current_nested_container_depth;
+            return true;
+         case IN_NESTED_CONTAINER:
+            ++current_nested_container_depth;
+            return true;
+         case EXPECT_FIRST_OBJECT_START:
+         case EXPECT_FIRST_OBJECT_KEY:
+         case EXPECT_CHALLENGE_VALUE:
+         case EXPECT_ORIGIN_VALUE:
+            return false;
+      }
+   }
+   bool EndArray(rapidjson::SizeType elementCount) {
+      switch(current_state) {
+         case EXPECT_FIRST_OBJECT_START:
+         case EXPECT_FIRST_OBJECT_DONTCARE_VALUE:
+         case EXPECT_CHALLENGE_VALUE:
+         case EXPECT_ORIGIN_VALUE:
+         case EXPECT_FIRST_OBJECT_KEY:
+            return false;
+         case IN_NESTED_CONTAINER:
+            if(!--current_nested_container_depth)
+               current_state = EXPECT_FIRST_OBJECT_KEY;
+            return true;
+      }
+   }
 };
+
 }
 }}}
-FC_REFLECT(fc::crypto::webauthn::detail::client_data_json_object, (type)(challenge))
 
 namespace fc { namespace crypto { namespace webauthn {
 
@@ -61,11 +203,15 @@ public_key::public_key(const signature_data& c, const fc::sha256& digest, bool c
    fc::raw::unpack(ds, auth_data);
    fc::raw::unpack(ds, client_data);
 
-   //XXXX read client_data and check challenge == digest
-   variant client_data_obj = fc::json::from_string(client_data).get_object();
-   FC_ASSERT(client_data_obj["type"].as_string() == "webauthn.get", "Wrong webauth signature type");
-   std::string challenge_bytes = fc::base64url_decode(client_data_obj["challenge"].as_string());
+   detail::webauthn_json_handler handler;
+   rapidjson::Reader reader;
+   rapidjson::StringStream ss(client_data.c_str());
+   FC_ASSERT(reader.Parse(ss, handler), "Failed to parse client data JSON");
+
+   std::string challenge_bytes = fc::base64url_decode(handler.found_challenge);
    FC_ASSERT(fc::sha256(challenge_bytes.data(), challenge_bytes.size()) == digest, "Wrong webauthn challenge");
+   //XXX check origin here
+   //XXX do we need to check rpid hash in auth_data?
 
    //the signature (and thus public key we need to return) will be over
    // sha256(auth_data || client_data_hash)
