@@ -10,6 +10,11 @@ namespace fc { namespace crypto {
          //signatures are two bignums: r & s. Just add up least significant digits of the two (assumed to be first)
          return *(size_t*)&sig._data.data[32-sizeof(size_t)] + *(size_t*)&sig._data.data[64-sizeof(size_t)];
       }
+
+      template<>
+      size_t operator()(const webauthn::signature& sig) const {
+         return sig.get_hash();
+      }
    };
 
    static signature::storage_type parse_base58(const std::string& base58str)
