@@ -174,8 +174,11 @@ public_key::public_key(const signature& c, const fc::sha256& digest, bool) {
    FC_ASSERT(handler.found_origin.compare(0, https_len, required_origin_scheme) == 0, "webauthn origin must begin with https://");
    rpid = handler.found_origin.substr(https_len, handler.found_origin.rfind(':')-https_len);
 
-   //XXX
-   printf("%02X\n", c.auth_data[32]);
+   FC_ASSERT(c.auth_data.size() >= 37, "auth_data not as large as required");
+   if(c.auth_data[32] & 0x01)
+      user_verification_type = USER_PRESENCE_PRESENT;
+   if(c.auth_data[32] & 0x04)
+      user_verification_type = USER_PRESENCE_VERIFIED;
 
    //the signature (and thus public key we need to return) will be over
    // sha256(auth_data || client_data_hash)
@@ -185,7 +188,7 @@ public_key::public_key(const signature& c, const fc::sha256& digest, bool) {
    e.write(client_data_hash.data(), client_data_hash.data_size());
    fc::sha256 signed_digest = e.result();
 
-   //quite a bit of this copied ffrom elliptic_r1, can probably commonize
+   //quite a bit of this copied from elliptic_r1, can probably commonize
    int nV = c.compact_signature.data[0];
    if (nV<31 || nV>=35)
       FC_THROW_EXCEPTION( exception, "unable to reconstruct public key from signature" );

@@ -20,10 +20,16 @@ class public_key {
       using data_type = public_key;
       public_key serialize() const { return *this; }
 
+      enum user_presence_t : uint8_t {
+         USER_PRESENCE_NONE,
+         USER_PRESENCE_PRESENT,
+         USER_PRESENCE_VERIFIED
+      };
+
       bool valid() const { return rpid.size(); }
 
       public_key() {}
-      public_key(const public_key_data_type& p, const uint8_t& t, const std::string& s) : 
+      public_key(const public_key_data_type& p, const user_presence_t& t, const std::string& s) : 
          public_key_data(p), user_verification_type(t), rpid(s) {}
       public_key(const signature& c, const fc::sha256& digest, bool check_canonical = true);
 
@@ -39,7 +45,7 @@ class public_key {
       friend struct fc::reflector<public_key>;
    private:
       public_key_data_type public_key_data;
-      uint8_t user_verification_type = 0;
+      user_presence_t user_verification_type = USER_PRESENCE_NONE;
       std::string rpid;
 };
 
@@ -113,5 +119,6 @@ struct less_comparator<webauthn::public_key> {
 }}
 #include <fc/reflect/reflect.hpp>
 
+FC_REFLECT_ENUM(fc::crypto::webauthn::public_key::user_presence_t, (USER_PRESENCE_NONE)(USER_PRESENCE_PRESENT)(USER_PRESENCE_VERIFIED))
 FC_REFLECT(fc::crypto::webauthn::signature, (compact_signature)(auth_data)(client_json))
 FC_REFLECT(fc::crypto::webauthn::public_key, (public_key_data)(user_verification_type)(rpid))
