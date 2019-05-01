@@ -32,6 +32,8 @@ namespace fc { namespace crypto {
 
          bool valid()const;
 
+         int which()const;
+
          // serialize to/from string
          explicit public_key(const string& base58str);
          explicit operator string() const;

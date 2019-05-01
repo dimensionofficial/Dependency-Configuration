@@ -36,6 +36,10 @@ namespace fc { namespace crypto {
       :_storage(parse_base58(base58str))
    {}
 
+   int signature::which() const {
+      return _storage.which();
+   }
+
    signature::operator std::string() const
    {
       auto data_str = _storage.visit(base58str_visitor<storage_type, config::signature_prefix>());

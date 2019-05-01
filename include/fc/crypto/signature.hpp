@@ -30,6 +30,8 @@ namespace fc { namespace crypto {
          explicit signature(const string& base58str);
          explicit operator string() const;
 
+         int which() const;
+
       private:
          storage_type _storage;
 
