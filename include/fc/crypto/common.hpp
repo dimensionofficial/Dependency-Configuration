@@ -118,7 +118,7 @@ namespace fc { namespace crypto {
       using variant_type = fc::static_variant<Ts...>;
       struct visitor : public fc::visitor<bool> {
          visitor(const variant_type &b)
-                 : _b(b) {}
+            : _b(b) {}
 
          template<typename KeyType>
          bool operator()(const KeyType &a) const {
