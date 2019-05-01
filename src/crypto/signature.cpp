@@ -6,8 +6,8 @@ namespace fc { namespace crypto {
    struct hash_visitor : public fc::visitor<size_t> {
       template<typename SigType>
       size_t operator()(const SigType& sig) const {
-         static_assert(sizeof(sig._data.data) >= 65, "sig size is expected to be at least 65");
-         //signatures are two bignums: r & s. Just add up least significant digits of the two (assumed to be first)
+         static_assert(sizeof(sig._data.data) == 65, "sig size is expected to be 65");
+         //signatures are two bignums: r & s. Just add up least significant digits of the two
          return *(size_t*)&sig._data.data[32-sizeof(size_t)] + *(size_t*)&sig._data.data[64-sizeof(size_t)];
       }
 
