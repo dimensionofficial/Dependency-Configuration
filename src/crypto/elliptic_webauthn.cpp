@@ -176,9 +176,9 @@ public_key::public_key(const signature& c, const fc::sha256& digest, bool) {
 
    FC_ASSERT(c.auth_data.size() >= 37, "auth_data not as large as required");
    if(c.auth_data[32] & 0x01)
-      user_verification_type = USER_PRESENCE_PRESENT;
+      user_verification_type = user_presence_t::USER_PRESENCE_PRESENT;
    if(c.auth_data[32] & 0x04)
-      user_verification_type = USER_PRESENCE_VERIFIED;
+      user_verification_type = user_presence_t::USER_PRESENCE_VERIFIED;
 
    //the signature (and thus public key we need to return) will be over
    // sha256(auth_data || client_data_hash)
