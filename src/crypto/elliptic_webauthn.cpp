@@ -174,11 +174,15 @@ public_key::public_key(const signature& c, const fc::sha256& digest, bool) {
    FC_ASSERT(handler.found_origin.compare(0, https_len, required_origin_scheme) == 0, "webauthn origin must begin with https://");
    rpid = handler.found_origin.substr(https_len, handler.found_origin.rfind(':')-https_len);
 
-   FC_ASSERT(c.auth_data.size() >= 37, "auth_data not as large as required");
+   constexpr static size_t min_auth_data_size = 37;
+   FC_ASSERT(c.auth_data.size() >= min_auth_data_size, "auth_data not as large as required");
    if(c.auth_data[32] & 0x01)
       user_verification_type = user_presence_t::USER_PRESENCE_PRESENT;
    if(c.auth_data[32] & 0x04)
       user_verification_type = user_presence_t::USER_PRESENCE_VERIFIED;
+
+   static_assert(min_auth_data_size >= sizeof(computed_rpid_hash), "expected auth_data to be greater than size of sha256");
+   memcpy(computed_rpid_hash.data(), c.auth_data.data(), sizeof(computed_rpid_hash));
 
    //the signature (and thus public key we need to return) will be over
    // sha256(auth_data || client_data_hash)
@@ -209,6 +213,11 @@ public_key::public_key(const signature& c, const fc::sha256& digest, bool) {
          return;
    }
    FC_THROW_EXCEPTION( exception, "unable to reconstruct public key from signature" );
+}
+
+void public_key::post_init() {
+   FC_ASSERT(rpid.length(), "webauthn pubkey must have non empty rpid");
+   computed_rpid_hash = fc::sha256::hash(rpid);
 }
 
 }}}

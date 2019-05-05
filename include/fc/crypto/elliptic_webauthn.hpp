@@ -30,16 +30,19 @@ class public_key {
 
       public_key() {}
       public_key(const public_key_data_type& p, const user_presence_t& t, const std::string& s) : 
-         public_key_data(p), user_verification_type(t), rpid(s) {}
+         public_key_data(p), user_verification_type(t), rpid(s) {
+            post_init();
+         }
       public_key(const signature& c, const fc::sha256& digest, bool check_canonical = true);
 
       bool operator==(const public_key& o) const {
          return        public_key_data == o.public_key_data        &&
                 user_verification_type == o.user_verification_type &&
-                                  rpid == o.rpid;
+                                  rpid == o.rpid                   &&
+                    computed_rpid_hash == o.computed_rpid_hash;
       }
       bool operator<(const public_key& o) const {
-         return std::tie(public_key_data, user_verification_type, rpid) < std::tie(o.public_key_data, o.user_verification_type, o.rpid);
+         return std::tie(public_key_data, user_verification_type, rpid,computed_rpid_hash) < std::tie(o.public_key_data, o.user_verification_type, o.rpid, o.computed_rpid_hash);
       }
 
       template<typename Stream>
@@ -57,6 +60,7 @@ class public_key {
          fc::raw::unpack(ds, t);
          k.user_verification_type = static_cast<user_presence_t>(t);
          fc::raw::unpack(ds, k.rpid);
+         k.post_init();
          return ds;
       }
 
@@ -64,6 +68,9 @@ class public_key {
       public_key_data_type public_key_data;
       user_presence_t user_verification_type = user_presence_t::USER_PRESENCE_NONE;
       std::string rpid;
+
+      void post_init();
+      fc::sha256 computed_rpid_hash;
 };
 
 class signature {
