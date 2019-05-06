@@ -18,6 +18,7 @@ using namespace std::literals;
 struct webauthn_json_handler : public rapidjson::BaseReaderHandler<rapidjson::UTF8<>, webauthn_json_handler> {
    std::string found_challenge;
    std::string found_origin;
+   std::string found_type;
 
    enum parse_stat_t {
       EXPECT_FIRST_OBJECT_START,
@@ -25,6 +26,7 @@ struct webauthn_json_handler : public rapidjson::BaseReaderHandler<rapidjson::UT
       EXPECT_FIRST_OBJECT_DONTCARE_VALUE,
       EXPECT_CHALLENGE_VALUE,
       EXPECT_ORIGIN_VALUE,
+      EXPECT_TYPE_VALUE,
       IN_NESTED_CONTAINER
    } current_state = EXPECT_FIRST_OBJECT_START;
    unsigned current_nested_container_depth = 0;
@@ -64,6 +66,10 @@ struct webauthn_json_handler : public rapidjson::BaseReaderHandler<rapidjson::UT
             found_origin = std::string(str, length);
             current_state = EXPECT_FIRST_OBJECT_KEY;
             return true;
+         case EXPECT_TYPE_VALUE:
+            found_type = std::string(str, length);
+            current_state = EXPECT_FIRST_OBJECT_KEY;
+            return true;
          case EXPECT_FIRST_OBJECT_DONTCARE_VALUE:
             current_state = EXPECT_FIRST_OBJECT_KEY;
             return true;
@@ -87,6 +93,7 @@ struct webauthn_json_handler : public rapidjson::BaseReaderHandler<rapidjson::UT
          case EXPECT_FIRST_OBJECT_KEY:
          case EXPECT_CHALLENGE_VALUE:
          case EXPECT_ORIGIN_VALUE:
+         case EXPECT_TYPE_VALUE:
             return false;
       }
    }
@@ -96,12 +103,15 @@ struct webauthn_json_handler : public rapidjson::BaseReaderHandler<rapidjson::UT
          case EXPECT_FIRST_OBJECT_DONTCARE_VALUE:
          case EXPECT_CHALLENGE_VALUE:
          case EXPECT_ORIGIN_VALUE:
+         case EXPECT_TYPE_VALUE:
             return false;
          case EXPECT_FIRST_OBJECT_KEY: {
             if("challenge"s == str)
                current_state = EXPECT_CHALLENGE_VALUE;
             else if("origin"s == str)
                current_state = EXPECT_ORIGIN_VALUE;
+            else if("type"s == str)
+               current_state = EXPECT_TYPE_VALUE;
             else
                current_state = EXPECT_FIRST_OBJECT_DONTCARE_VALUE;
             return true;
@@ -116,6 +126,7 @@ struct webauthn_json_handler : public rapidjson::BaseReaderHandler<rapidjson::UT
          case EXPECT_FIRST_OBJECT_DONTCARE_VALUE:
          case EXPECT_CHALLENGE_VALUE:
          case EXPECT_ORIGIN_VALUE:
+         case EXPECT_TYPE_VALUE:
             return false;
          case IN_NESTED_CONTAINER:
             if(!--current_nested_container_depth)
@@ -139,6 +150,7 @@ struct webauthn_json_handler : public rapidjson::BaseReaderHandler<rapidjson::UT
          case EXPECT_FIRST_OBJECT_KEY:
          case EXPECT_CHALLENGE_VALUE:
          case EXPECT_ORIGIN_VALUE:
+         case EXPECT_TYPE_VALUE:
             return false;
       }
    }
@@ -148,6 +160,7 @@ struct webauthn_json_handler : public rapidjson::BaseReaderHandler<rapidjson::UT
          case EXPECT_FIRST_OBJECT_DONTCARE_VALUE:
          case EXPECT_CHALLENGE_VALUE:
          case EXPECT_ORIGIN_VALUE:
+         case EXPECT_TYPE_VALUE:
          case EXPECT_FIRST_OBJECT_KEY:
             return false;
          case IN_NESTED_CONTAINER:
@@ -165,6 +178,8 @@ public_key::public_key(const signature& c, const fc::sha256& digest, bool) {
    rapidjson::Reader reader;
    rapidjson::StringStream ss(c.client_json.c_str());
    FC_ASSERT(reader.Parse(ss, handler), "Failed to parse client data JSON");
+
+   FC_ASSERT(handler.found_type == "webauthn.get", "webauthn signature type not an assertion");
 
    std::string challenge_bytes = fc::base64url_decode(handler.found_challenge);
    FC_ASSERT(fc::sha256(challenge_bytes.data(), challenge_bytes.size()) == digest, "Wrong webauthn challenge");
