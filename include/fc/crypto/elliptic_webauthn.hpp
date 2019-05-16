@@ -38,11 +38,10 @@ class public_key {
       bool operator==(const public_key& o) const {
          return        public_key_data == o.public_key_data        &&
                 user_verification_type == o.user_verification_type &&
-                                  rpid == o.rpid                   &&
-                    computed_rpid_hash == o.computed_rpid_hash;
+                                  rpid == o.rpid;
       }
       bool operator<(const public_key& o) const {
-         return std::tie(public_key_data, user_verification_type, rpid,computed_rpid_hash) < std::tie(o.public_key_data, o.user_verification_type, o.rpid, o.computed_rpid_hash);
+         return std::tie(public_key_data, user_verification_type, rpid) < std::tie(o.public_key_data, o.user_verification_type, o.rpid);
       }
 
       template<typename Stream>
@@ -70,7 +69,6 @@ class public_key {
       std::string rpid;
 
       void post_init();
-      fc::sha256 computed_rpid_hash;
 };
 
 class signature {

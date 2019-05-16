@@ -196,8 +196,8 @@ public_key::public_key(const signature& c, const fc::sha256& digest, bool) {
    if(c.auth_data[32] & 0x04)
       user_verification_type = user_presence_t::USER_PRESENCE_VERIFIED;
 
-   static_assert(min_auth_data_size >= sizeof(computed_rpid_hash), "expected auth_data to be greater than size of sha256");
-   memcpy(computed_rpid_hash.data(), c.auth_data.data(), sizeof(computed_rpid_hash));
+   static_assert(min_auth_data_size >= sizeof(fc::sha256), "auth_data min size not enough to store a sha256");
+   FC_ASSERT(memcmp(c.auth_data.data(), fc::sha256::hash(rpid).data(), sizeof(fc::sha256)) == 0, "webauthn rpid hash doesn't match origin");
 
    //the signature (and thus public key we need to return) will be over
    // sha256(auth_data || client_data_hash)
@@ -232,7 +232,6 @@ public_key::public_key(const signature& c, const fc::sha256& digest, bool) {
 
 void public_key::post_init() {
    FC_ASSERT(rpid.length(), "webauthn pubkey must have non empty rpid");
-   computed_rpid_hash = fc::sha256::hash(rpid);
 }
 
 }}}
