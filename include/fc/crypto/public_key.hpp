@@ -30,6 +30,10 @@ namespace fc { namespace crypto {
 
          public_key( const signature& c, const sha256& digest, bool check_canonical = true );
 
+         public_key( storage_type&& other_storage )
+         :_storage(forward<storage_type>(other_storage))
+         {}
+
          bool valid()const;
 
          int which()const;
@@ -41,10 +45,6 @@ namespace fc { namespace crypto {
          storage_type _storage;
 
       private:
-         public_key( storage_type&& other_storage )
-         :_storage(forward<storage_type>(other_storage))
-         {}
-
          friend std::ostream& operator<< (std::ostream& s, const public_key& k);
          friend bool operator == ( const public_key& p1, const public_key& p2);
          friend bool operator != ( const public_key& p1, const public_key& p2);
