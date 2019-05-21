@@ -38,9 +38,9 @@ namespace fc { namespace crypto {
          explicit public_key(const string& base58str);
          explicit operator string() const;
 
-      private:
          storage_type _storage;
 
+      private:
          public_key( storage_type&& other_storage )
          :_storage(forward<storage_type>(other_storage))
          {}
