@@ -1,4 +1,5 @@
 #include <fc/crypto/base64.hpp>
+#include <fc/exception/exception.hpp>
 #include <ctype.h>
 /* 
    base64.cpp and base64.h
@@ -40,8 +41,8 @@ static constexpr char base64url_chars[] =
 
 static_assert(sizeof(base64_chars) == sizeof(base64url_chars), "base64 and base64url must have the same amount of chars");
 
-static inline bool is_base64(unsigned char c, const char* const b64_chars) {
-  return (isalnum(c) || (c == b64_chars[sizeof(base64_chars)-3]) || (c == b64_chars[sizeof(base64_chars)-2]));
+static inline void throw_on_nonbase64(unsigned char c, const char* const b64_chars) {
+  FC_ASSERT(isalnum(c) || (c == b64_chars[sizeof(base64_chars)-3]) || (c == b64_chars[sizeof(base64_chars)-2]), "encountered non-base64 character");
 }
 
 std::string base64_encode_impl(unsigned char const* bytes_to_encode, unsigned int in_len, const char* const b64_chars) {
@@ -114,7 +115,8 @@ std::string base64_decode_impl(std::string const& encoded_string, const char* co
   unsigned char char_array_4[4], char_array_3[3];
   std::string ret;
 
-  while (in_len-- && ( encoded_string[in_] != '=') && is_base64(encoded_string[in_], b64_chars)) {
+  while (in_len-- && encoded_string[in_] != '=') {
+    throw_on_nonbase64(encoded_string[in_], b64_chars);
     char_array_4[i++] = encoded_string[in_]; in_++;
     if (i ==4) {
       for (i = 0; i <4; i++)

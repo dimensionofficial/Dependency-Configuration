@@ -37,4 +37,19 @@ BOOST_AUTO_TEST_CASE(base64urldec) try {
    BOOST_CHECK_EQUAL(expected_output, base64url_decode(input));
 } FC_LOG_AND_RETHROW();
 
+BOOST_AUTO_TEST_CASE(base64dec_extraequals) try {
+   auto input = "YWJjMTIzJCYoKSc/tPUB+n5h========="s;
+   auto expected_output = "abc123$&()'?\xb4\xf5\x01\xfa~a"s;
+
+   BOOST_CHECK_EQUAL(expected_output, base64_decode(input));
+} FC_LOG_AND_RETHROW();
+
+BOOST_AUTO_TEST_CASE(base64dec_bad_stuff) try {
+   auto input = "YWJjMTIzJCYoKSc/tPU$B+n5h="s;
+
+   BOOST_CHECK_EXCEPTION(base64_decode(input), fc::exception, [](const fc::exception& e) {
+      return e.to_detail_string().find("encountered non-base64 character") != std::string::npos;
+   });
+} FC_LOG_AND_RETHROW();
+
 BOOST_AUTO_TEST_SUITE_END()
