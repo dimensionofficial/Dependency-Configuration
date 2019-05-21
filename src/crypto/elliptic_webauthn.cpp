@@ -31,26 +31,36 @@ struct webauthn_json_handler : public rapidjson::BaseReaderHandler<rapidjson::UT
    } current_state = EXPECT_FIRST_OBJECT_START;
    unsigned current_nested_container_depth = 0;
 
+   bool basic_stuff() {
+      if(current_state == IN_NESTED_CONTAINER)
+         return true;
+      if(current_state == EXPECT_FIRST_OBJECT_DONTCARE_VALUE) {
+         current_state = EXPECT_FIRST_OBJECT_KEY;
+         return true;
+      }
+      return false;
+   }
+
    bool Null() {
-      return (current_state == IN_NESTED_CONTAINER || current_state == EXPECT_FIRST_OBJECT_DONTCARE_VALUE);
+      return basic_stuff();
    }
    bool Bool(bool) {
-      return (current_state == IN_NESTED_CONTAINER || current_state == EXPECT_FIRST_OBJECT_DONTCARE_VALUE);
+      return basic_stuff();
    }
    bool Int(int) {
-      return (current_state == IN_NESTED_CONTAINER || current_state == EXPECT_FIRST_OBJECT_DONTCARE_VALUE);
+      return basic_stuff();
    }
    bool Uint(unsigned) {
-      return (current_state == IN_NESTED_CONTAINER || current_state == EXPECT_FIRST_OBJECT_DONTCARE_VALUE);
+      return basic_stuff();
    }
    bool Int64(int64_t) {
-      return (current_state == IN_NESTED_CONTAINER || current_state == EXPECT_FIRST_OBJECT_DONTCARE_VALUE);
+      return basic_stuff();
    }
    bool Uint64(uint64_t) {
-      return (current_state == IN_NESTED_CONTAINER || current_state == EXPECT_FIRST_OBJECT_DONTCARE_VALUE);
+      return basic_stuff();
    }
    bool Double(double) {
-      return (current_state == IN_NESTED_CONTAINER || current_state == EXPECT_FIRST_OBJECT_DONTCARE_VALUE);
+      return basic_stuff();
    }
 
    bool String(const char* str, rapidjson::SizeType length, bool copy) {
