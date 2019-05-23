@@ -85,6 +85,10 @@ class signature {
          return public_key(*this, digest, check_canonical);
       }
 
+      size_t variable_size() const {
+         return auth_data.size() + client_json.size();
+      }
+
       bool operator==(const signature& o) const {
          return compact_signature == o.compact_signature &&
                         auth_data == o.auth_data         &&

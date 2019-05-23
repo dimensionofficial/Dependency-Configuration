@@ -32,6 +32,8 @@ namespace fc { namespace crypto {
 
          int which() const;
 
+         size_t variable_size() const;
+
       private:
          storage_type _storage;
 

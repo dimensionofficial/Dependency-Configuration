@@ -40,6 +40,20 @@ namespace fc { namespace crypto {
       return _storage.which();
    }
 
+   template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+   template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
+
+   size_t signature::variable_size() const {
+      return _storage.visit<size_t>(overloaded {
+         [&](const auto& k1r1) {
+            return 0;
+         },
+         [&](const webauthn::signature& wa) {
+            return wa.variable_size();
+         }
+      });
+   }
+
    signature::operator std::string() const
    {
       auto data_str = _storage.visit(base58str_visitor<storage_type, config::signature_prefix>());
