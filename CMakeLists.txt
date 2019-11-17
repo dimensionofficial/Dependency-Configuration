@@ -158,7 +158,7 @@ IF(APPLE)
   find_library(security_framework Security)
   find_library(corefoundation_framework CoreFoundation)
 ENDIF()
-target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${readline_libraries} ${ECC_LIB} ${security_framework} ${corefoundation_framework} )
+target_link_libraries( fc PUBLIC ${LINK_USR_LOCAL_LIB} ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${ZLIB_LIBRARIES} ${PLATFORM_SPECIFIC_LIBS} ${RPCRT4} ${CMAKE_DL_LIBS} ${rt_library} ${readline_libraries} ${ECC_LIB} ${security_framework} ${corefoundation_framework} pthread )
 
 
 SET(OPENSSL_CONF_TARGET )
